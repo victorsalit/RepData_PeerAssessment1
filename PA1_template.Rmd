@@ -10,25 +10,15 @@ output:
 
 
 ## Loading and preprocessing the data
-```{r, cache=TRUE}
-data <- read.csv(unz("activity.zip", "activity.csv"),stringsAsFactors = FALSE)
-```
-
 ```{r}
+data <- read.csv(unz("activity.zip", "activity.csv"),stringsAsFactors = FALSE)
 data$date <- as.Date(data$date)
-str(data)
-summary(data)
-head(data)
-tail(data)
 ```
 
 
 ## What is mean total number of steps taken per day?
-```{r}
+```{r Mean total steps}
 completedata <- data[complete.cases(data$step),]
-summary(completedata)
-head(completedata)
-tail(completedata)
 by1 <- factor(completedata$date)
 total_steps <- aggregate(completedata$steps, by=list(by1), sum, simplify = TRUE)
 names(total_steps) <- c("date", "steps")
@@ -40,7 +30,7 @@ The mean total number of steps taken per day is `r meansteps`.
 The median total number of steps taken per day is `r mediansteps`.
 
 ## What is the average daily activity pattern?
-```{r}
+```{r Average daily activity}
 by2 <- factor(completedata$interval)
 averageactivity <- aggregate(completedata$steps, by=list(by2),mean,simplify=TRUE)
 names(averageactivity) <- c("interval", "mean_steps")
@@ -53,18 +43,50 @@ On average across all the days in the dataset the interval `r maxinterval` conta
 ```{r}
 NAs <- sum(is.na(data$steps))
 ```
-
 The total number of missing values in the dataset is `r NAs`.  
-Strategy for filling the missing data: interval mean across all days:
 
+Strategy for filling the missing data: interval mean across all days:
 ```{r}
 filled <- data
-
 index <- match(data$interval[is.na(data$steps)], averageactivity$interval)
 filled$steps[is.na(data$steps)] <- averageactivity[index,2]
+```
+
+```{r Imputed values}
+by3 <- factor(filled$date)
+ftotal_steps <- aggregate(filled$steps, by=list(by3), sum, simplify = TRUE)
+names(ftotal_steps) <- c("date", "steps")
+hist(ftotal_steps$steps, col="blue")
+fmeansteps <- mean(total_steps$steps)
+fmediansteps <- median(total_steps$steps)
+```
+The mean total number of steps taken per day with filled values is `r fmeansteps`.  
+The median total number of steps taken per day filled values is `r fmediansteps`.
+There is no change, since we've used means.
+
+## Are there differences in activity patterns between weekdays and weekends?
+```{r Differences in activity patterns}
+
+filled$day_of_week <- weekdays(as.POSIXct(as.character(data$date)))
+weekendindex <- grepl(c("Samstag", "Sonntag"), filled$day_of_week)
+#filled$day_of_week[weekendindex] <- "Weekend"
+#filled$day_of_week[!weekendindex] <- "Weekday"
+#filled$day_of_week <- as.factor(filled$day_of_week)
+
+week <- filled[!weekendindex,]
+
+by4 <- factor(week$interval)
+averageweek <- aggregate(week$steps, by=list(by4),mean,simplify=TRUE)
+names(averageweek) <- c("interval", "mean_steps")
+
+weekend <- filled[weekendindex,]
+by5 <- factor(weekend$interval)
+averageweekend <- aggregate(weekend$steps, by=list(by4),mean,simplify=TRUE)
+names(averageweekend) <- c("interval", "mean_steps")
+par(mfrow = c(2,1))
+plot(as.character(averageweek$interval),averageweek$mean_steps,type="l")
+plot(as.character(averageweekend$interval),averageweekend$mean_steps,type="l")
+
 
 ```
 
-
-
-## Are there differences in activity patterns between weekdays and weekends?
